@@ -1,0 +1,21 @@
+{
+  "kind": "collectionType",
+  "collectionName": "what_not_to_dos",
+  "info": {
+    "singularName": "what-not-to-do",
+    "pluralName": "what-not-to-dos",
+    "displayName": "WhatNotToDo"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string"
+    },
+    "Content": {
+      "type": "blocks"
+    }
+  }
+}

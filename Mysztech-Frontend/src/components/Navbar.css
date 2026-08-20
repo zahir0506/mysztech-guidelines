@@ -1,0 +1,55 @@
+/* src/components/Navbar.css */
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #1f2937; /* Warna latar belakang gelap yang moden */
+  color: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  position: sticky; /* Memastikan navbar sentiasa berada di atas bila scroll */
+  top: 0;
+  z-index: 1000;
+}
+
+.navbar-logo h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  margin: 0;
+  color: #ffffff;
+}
+
+.nav-links {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.nav-item {
+  color: #d1d5db; /* Warna kelabu cair */
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  transition: color 0.3s ease; /* Animasi lembut bila hover */
+}
+
+.nav-item:hover {
+  color: #60a5fa; /* Warna teks bertukar biru muda bila ditunjuk */
+}
+
+/* Reka bentuk responsif untuk skrin kecil (Telefon Bimbit) */
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    padding: 1rem;
+    gap: 15px;
+  }
+  
+  .nav-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+  }
+}

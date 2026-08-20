@@ -1,0 +1,21 @@
+{
+  "kind": "collectionType",
+  "collectionName": "what_to_dos",
+  "info": {
+    "singularName": "what-to-do",
+    "pluralName": "what-to-dos",
+    "displayName": "WhatToDo"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string"
+    },
+    "Content": {
+      "type": "blocks"
+    }
+  }
+}

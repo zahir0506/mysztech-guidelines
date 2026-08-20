@@ -1,0 +1,21 @@
+{
+  "kind": "collectionType",
+  "collectionName": "faq_4s",
+  "info": {
+    "singularName": "faq-4",
+    "pluralName": "faq-4s",
+    "displayName": "Faq4"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Title": {
+      "type": "string"
+    },
+    "Content": {
+      "type": "blocks"
+    }
+  }
+}

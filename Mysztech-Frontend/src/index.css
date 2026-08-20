@@ -1,0 +1,79 @@
+/* src/index.css */
+
+/* 1. Buang semua margin dan padding lalai pada pelayar web */
+html,
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  height: 100%;
+  background-color: #f9fafb;
+  /* Warna latar belakang cerah untuk keseluruhan web */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* 2. Paksa ruang utama React (#root) untuk memenuhi 100% skrin */
+#root {
+  width: 100% !important;
+  max-width: 100% !important;
+  /* Membatalkan had lebar 1280px daripada Vite */
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left;
+  /* Menukar dari center supaya teks mula dari kiri */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* 3. Pastikan elemen lain juga kemas dari segi ukuran kotak */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* --- RESPONSIVE UNTUK TABLET & TELEFON --- */
+.mobile-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 40;
+}
+
+@media (max-width: 768px) {
+
+  /* Paparkan latar gelap lutsinar jika sidebar dibuka di telefon */
+  .mobile-overlay.show {
+    display: block;
+  }
+
+  /* Terapungkan Sidebar di atas kandungan supaya ia tidak menghimpit skrin */
+  .sidebar-wrapper {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+  }
+
+  /* Sorokkan menu teks (Home, FAQ, dll) di Navbar supaya tidak bersesak */
+  .nav-links {
+    display: none !important;
+  }
+}
+
+/* --- ANIMASI KAD (HOVER) --- */
+.hover-card {
+  /* Memastikan pergerakan naik dan bayang-bayang berlaku secara lembut selama 0.3 saat */
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+.hover-card:hover {
+  /* Mengangkat kad ke atas sebanyak 8 pixel */
+  transform: translateY(-8px);
+  /* Menjadikan bayang-bayang lebih besar dan gelap sedikit */
+  box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
