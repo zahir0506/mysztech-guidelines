@@ -1,5 +1,35 @@
 /* src/index.css */
 
+:root {
+  --global-bg: #ffffff;
+  --global-sidebar-bg: #f9fafb;
+  --global-header-bg: #ffffff;
+  --global-search-bg: #f3f4f6;
+  --global-text-main: #111827;
+  --global-text-body: #374151;
+  --global-text-muted: #6b7280;
+  --global-border: #e5e7eb;
+  --global-border-hover: #d1d5db;
+  --global-accent: #f97316;
+  --global-accent-hover: #ea580c;
+  --global-card-bg: #ffffff;
+  --global-card-hover: #f3f4f6;
+}
+
+[data-theme="dark"] {
+  --global-bg: #111111;
+  --global-sidebar-bg: #111111;
+  --global-header-bg: #111111;
+  --global-search-bg: #1f1f1f;
+  --global-text-main: #ffffff;
+  --global-text-body: #d4d4d8;
+  --global-text-muted: #a1a1aa;
+  --global-border: #27272a;
+  --global-border-hover: #3f3f46;
+  --global-card-bg: #18181b;
+  --global-card-hover: #27272a;
+}
+
 /* 1. Buang semua margin dan padding lalai pada pelayar web */
 html,
 body {
@@ -7,9 +37,15 @@ body {
   padding: 0 !important;
   width: 100% !important;
   height: 100%;
-  background-color: #f9fafb;
-  /* Warna latar belakang cerah untuk keseluruhan web */
+  background-color: var(--global-bg, #f9fafb);
+  color: var(--global-text-body, #374151);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* 2. Paksa ruang utama React (#root) untuk memenuhi 100% skrin */

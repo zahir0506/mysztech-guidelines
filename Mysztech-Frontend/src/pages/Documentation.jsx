@@ -1,44 +1,89 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { getArticles } from '../services/api';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { getArticles, getPrologues } from '../services/api';
 
-// --- IMPORT KOMPONEN TROUBLESHOOTING KASTAM AWAK DI SINI ---
-import Troubleshooting from './Troubleshooting'; 
+import Troubleshooting from './Troubleshooting';
+import Sidebar from '../components/Sidebar';
+import PageLayout from '../components/PageLayout';
 
-// --- KOMPONEN MATERIAL-UI (MUI) ---
-import {
-  CssBaseline, Box, Typography, CircularProgress, Divider, Button, IconButton, InputBase
-} from '@mui/material';
-
-// --- IKON MUI ---
+import { Typography, CircularProgress, Button, Box, Link as MuiLink } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import LightModeIcon from '@mui/icons-material/LightMode';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
-import SearchIcon from '@mui/icons-material/Search';
+
+const getFullTextHelper = (n) => {
+  if (!n) return '';
+  if (n.text !== undefined) return n.text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '');
+  if (n.children) return n.children.map(getFullTextHelper).join('');
+  return '';
+};
+
+const getArticleChunks = (contentData) => {
+  let chunks = [];
+  let leftSubMenu = [];
+
+  if (Array.isArray(contentData)) {
+    const headings = contentData.filter(n => n.type === 'heading');
+    const sliceLevel = headings.length > 0 ? Math.min(...headings.map(n => n.level || 2)) : 2;
+
+    let currentSectionId = 'intro';
+    let currentNodes = [];
+
+    contentData.forEach((node, index) => {
+      if (node.type === 'heading' && (node.level || 2) === sliceLevel) {
+        chunks.push({ id: currentSectionId, nodes: currentNodes });
+        currentSectionId = `sub-${index}`;
+        currentNodes = [node];
+        const text = node.children ? node.children.map(c => c.text).join('') : '';
+        leftSubMenu.push({ id: currentSectionId, text, level: node.level || 2 });
+      } else {
+        currentNodes.push(node);
+      }
+    });
+    chunks.push({ id: currentSectionId, nodes: currentNodes });
+  } else {
+    chunks.push({ id: 'intro', nodes: contentData });
+  }
+
+  return { chunks, leftSubMenu };
+};
 
 const Documentation = () => {
   const [articles, setArticles] = useState([]);
+  const [prologueArticles, setPrologueArticles] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
+  const [searchFocused, setSearchFocused] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const searchInputRef = useRef(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const articleId = searchParams.get('id');
-  const activeSub = searchParams.get('sub'); 
+  const activeSub = searchParams.get('sub');
 
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [language, setLanguage] = useState('en');
 
   useEffect(() => {
+    const savedLang = localStorage.getItem('mysztech_lang');
+    if (savedLang) setLanguage(savedLang);
     const savedTheme = localStorage.getItem('mysztech_theme');
     if (savedTheme === 'light') {
       setIsDarkMode(false);
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
     }
   }, []);
 
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ms' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('mysztech_lang', newLang);
+  };
+
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-    localStorage.setItem('mysztech_theme', !isDarkMode ? 'dark' : 'light');
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    localStorage.setItem('mysztech_theme', newTheme ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', newTheme ? 'dark' : 'light');
   };
 
   const theme = {
@@ -51,7 +96,7 @@ const Documentation = () => {
     textMuted: isDarkMode ? '#a1a1aa' : '#6b7280',
     border: isDarkMode ? '#27272a' : '#e5e7eb',
     borderHover: isDarkMode ? '#3f3f46' : '#d1d5db',
-    accent: '#f97316', 
+    accent: '#f97316',
     accentHover: '#ea580c',
     cardBg: isDarkMode ? '#18181b' : '#ffffff',
     cardHover: isDarkMode ? '#27272a' : '#f3f4f6',
@@ -59,9 +104,14 @@ const Documentation = () => {
 
   useEffect(() => {
     const fetchDocs = async () => {
+      setLoading(true);
       try {
-        const response = await getArticles();
-        setArticles(response.data.data);
+        const [docsResponse, prologuesResponse] = await Promise.all([
+          getArticles(language),
+          getPrologues(language)
+        ]);
+        setArticles(docsResponse.data.data);
+        setPrologueArticles(prologuesResponse.data.data);
         setLoading(false);
       } catch (error) {
         console.error("Ralat ketika menarik data dokumentasi:", error);
@@ -69,18 +119,137 @@ const Documentation = () => {
       }
     };
     fetchDocs();
-  }, []);
+  }, [language]);
+
+  useEffect(() => {
+    if (!loading && (!articleId || articleId === 'prologue')) {
+      const findMainPrologue = (sourceArray) => {
+        return sourceArray.find(item => {
+          const attr = item.attributes || item;
+          const title = attr.title || attr.Title || "";
+          return title.toLowerCase().trim() === 'prologue' || title.toLowerCase().trim() === 'prolog';
+        });
+      };
+
+      const main = findMainPrologue(prologueArticles) || findMainPrologue(articles);
+      const subs = prologueArticles.filter(item => {
+        const title = (item.attributes || item).title || "";
+        return title.toLowerCase().trim() !== 'prologue' && title.toLowerCase().trim() !== 'prolog';
+      });
+
+      if (main && String(main.id) !== articleId) {
+        setSearchParams({ id: main.id }, { replace: true });
+      } else if (!main && subs.length > 0 && String(subs[0].id) !== articleId) {
+        setSearchParams({ id: subs[0].id }, { replace: true });
+      }
+    }
+  }, [loading, articleId, articles, prologueArticles, setSearchParams]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault(); 
-        if (searchInputRef.current) searchInputRef.current.focus();
+        e.preventDefault();
+        setSearchFocused(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const searchResults = useMemo(() => {
+    if (searchTerm.trim().length < 2) return [];
+
+    const lowerQuery = searchTerm.toLowerCase();
+    const results = [];
+    const allDocs = [...prologueArticles, ...articles];
+
+    allDocs.forEach(item => {
+      const attr = item.attributes || item;
+      let rawTitle = attr.title || attr.Title || "";
+      const displayTitle = rawTitle.replace(/^(Prologue|Prolog)\s*[:-]\s*/i, '');
+      const contentData = attr.Content || attr.content || attr.Description || attr.description;
+
+      const { chunks, leftSubMenu } = getArticleChunks(contentData);
+
+      if (displayTitle.toLowerCase().includes(lowerQuery)) {
+        results.push({
+          id: `art-${item.id}`, type: 'article', articleId: item.id, subId: null,
+          title: displayTitle, snippet: language === 'ms' ? 'Artikel Utama' : 'Main Article'
+        });
+      }
+
+      chunks.forEach(chunk => {
+        let headingText = chunk.id === 'intro' ? displayTitle : (leftSubMenu.find(s => s.id === chunk.id)?.text || displayTitle);
+        let subId = chunk.id === 'intro' ? null : chunk.id;
+
+        if (chunk.id !== 'intro' && headingText.toLowerCase().includes(lowerQuery)) {
+          results.push({
+            id: `head-${item.id}-${chunk.id}`, type: 'heading', articleId: item.id, subId: subId,
+            title: headingText, snippet: `${displayTitle} > ${headingText}`
+          });
+        }
+
+        if (Array.isArray(chunk.nodes)) {
+          let chunkText = chunk.nodes.map(node => getFullTextHelper(node)).join(' ');
+          chunkText = chunkText
+            .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '')
+            .replace(/https?:\/\/[^\s]+/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          if (chunkText.toLowerCase().includes(lowerQuery)) {
+            const matchIndex = chunkText.toLowerCase().indexOf(lowerQuery);
+            const start = Math.max(0, matchIndex - 40);
+            const end = Math.min(chunkText.length, matchIndex + 80);
+            const snippet = "..." + chunkText.substring(start, end).replace(/\n/g, ' ') + "...";
+
+            if (!results.some(r => r.type === 'content' && r.articleId === item.id && r.subId === subId)) {
+              results.push({
+                id: `txt-${item.id}-${chunk.id}`, type: 'content', articleId: item.id, subId: subId,
+                title: headingText, snippet: snippet
+              });
+            }
+          }
+        }
+      });
+    });
+
+    return results;
+  }, [searchTerm, articles, prologueArticles, language]);
+
+  const highlightMatch = (text) => {
+    if (!searchTerm || !text) return text;
+    const parts = text.split(new RegExp(`(${searchTerm})`, 'gi'));
+    return parts.map((part, i) =>
+      part.toLowerCase() === searchTerm.toLowerCase() ? (
+        <Box component="span" key={i} sx={{ color: theme.accent, fontWeight: '700' }}>{part}</Box>
+      ) : part
+    );
+  };
+
+  const handleSearchResultClick = (result) => {
+    setSearchParams(result.subId ? { id: result.articleId, sub: result.subId } : { id: result.articleId });
+  };
+
+  const highlightText = (text) => {
+    if (!searchTerm || !text) return text;
+    const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedTerm})`, 'gi');
+    const parts = text.split(regex);
+
+    return parts.map((part, i) =>
+      part.toLowerCase() === searchTerm.toLowerCase() ? (
+        <Box component="mark" key={i} sx={{ backgroundColor: '#fef08a', color: '#111827', borderRadius: '3px', padding: '0 2px' }}>{part}</Box>
+      ) : part
+    );
+  };
+
+  const highlightHTML = (htmlString) => {
+    if (!searchTerm || !htmlString) return htmlString;
+    const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedTerm})`, 'gi');
+    return htmlString.replace(regex, '<mark style="background-color: #fef08a; color: #111827; border-radius: 3px; padding: 0 2px;">$1</mark>');
+  };
 
   const renderNode = (node, index) => {
     if (!node) return null;
@@ -94,25 +263,17 @@ const Documentation = () => {
     if (node.type === 'heading') {
       const fullString = getFullText(node);
       const level = node.level || 2;
-      const HeadingTag = `h${level}`;
       const fontSize = level === 1 ? '28px' : level === 2 ? '22px' : '18px';
 
       return (
-        <HeadingTag
+        <Typography
           key={index}
           id={`heading-${index}`}
-          style={{
-            fontFamily: "'Sora', sans-serif",
-            color: theme.textMain,
-            marginTop: '25px',
-            marginBottom: '15px',
-            fontSize: fontSize,
-            fontWeight: '700',
-            scrollMarginTop: '100px'
-          }}
+          variant={`h${level}`}
+          sx={{ fontFamily: "'Sora', Inter", color: theme.textMain, mt: '25px', mb: '15px', fontSize: fontSize, fontWeight: '700', scrollMarginTop: '100px', maxWidth: '850px' }}
         >
-          {fullString}
-        </HeadingTag>
+          {highlightText(fullString)}
+        </Typography>
       );
     }
 
@@ -123,75 +284,66 @@ const Documentation = () => {
         const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
         const matches = [...fullString.matchAll(imageRegex)];
         let textOnly = fullString.replace(imageRegex, '').trim();
+        let highlightedTextOnly = highlightHTML(textOnly);
 
         if (matches.length === 1) {
           let htmlText = '';
-          if (textOnly) htmlText += `<span style="display: block; margin-bottom: 10px; font-family: 'Inter', sans-serif;">${textOnly}</span>`;
-          htmlText += fullString.replace(imageRegex, '<img src="$2" alt="$1" style="max-width: 100%; border-radius: 8px; margin: 25px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: block; border: 1px solid ' + theme.border + '" />');
-          
+          if (textOnly) htmlText += `<span style="display: block; margin-bottom: 10px; font-family: 'Inter', sans-serif; max-width: 850px;">${highlightedTextOnly}</span>`;
+          htmlText += fullString.replace(imageRegex, `<img src="$2" alt="$1" style="max-width: 100%; border-radius: 8px; margin: 25px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: block; border: 1px solid ${theme.border}" />`);
           const marginB = node.type === 'list-item' ? '8px' : '20px';
-          if (node.type === 'list-item') {
-            return <li key={index} style={{ marginBottom: marginB, lineHeight: '1.8', fontFamily: "'Inter', sans-serif" }} dangerouslySetInnerHTML={{ __html: htmlText }}></li>;
-          }
-          return <p key={index} style={{ marginBottom: marginB, lineHeight: '1.8', color: theme.textBody, fontFamily: "'Inter', sans-serif" }} dangerouslySetInnerHTML={{ __html: htmlText }}></p>;
+          if (node.type === 'list-item') return <Box component="li" key={index} sx={{ mb: marginB, lineHeight: '1.8', fontFamily: "'Inter', sans-serif" }} dangerouslySetInnerHTML={{ __html: htmlText }} />;
+          return <Box key={index} sx={{ mb: marginB, lineHeight: '1.8', color: theme.textBody, fontFamily: "'Inter', sans-serif" }} dangerouslySetInnerHTML={{ __html: htmlText }} />;
         }
 
         let imagesHtml = '';
-        if (textOnly) imagesHtml += `<p style="margin-bottom: 15px; color: ${theme.textBody}; font-family: 'Inter', sans-serif;">${textOnly}</p>`;
-        
-        imagesHtml += '<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: flex-start; margin: 25px 0;">';
+        if (textOnly) imagesHtml += `<p style="margin-bottom: 15px; color: ${theme.textBody}; font-family: 'Inter', sans-serif; max-width: 850px;">${highlightedTextOnly}</p>`;
+        imagesHtml += '<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin: 25px 0;">';
         matches.forEach(match => {
-          const alt = match[1];
-          const src = match[2];
-          imagesHtml += `<img src="${src}" alt="${alt}" style="max-width: 47%; flex: 1 1 300px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); object-fit: contain; border: 1px solid ${theme.border}" />`;
+          imagesHtml += `<img src="${match[2]}" alt="${match[1]}" style="max-width: 47%; flex: 1 1 300px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); object-fit: contain; border: 1px solid ${theme.border}" />`;
         });
         imagesHtml += '</div>';
 
         const marginB = node.type === 'list-item' ? '8px' : '20px';
-        if (node.type === 'list-item') {
-          return <li key={index} style={{ marginBottom: marginB, lineHeight: '1.8', fontFamily: "'Inter', sans-serif" }} dangerouslySetInnerHTML={{ __html: imagesHtml }}></li>;
-        }
-        return <div key={index} style={{ marginBottom: marginB }}>
-          <div dangerouslySetInnerHTML={{ __html: imagesHtml }} />
-        </div>;
+        if (node.type === 'list-item') return <Box component="li" key={index} sx={{ mb: marginB, lineHeight: '1.8', fontFamily: "'Inter', sans-serif" }} dangerouslySetInnerHTML={{ __html: imagesHtml }} />;
+        return <Box key={index} sx={{ mb: marginB }} dangerouslySetInnerHTML={{ __html: imagesHtml }} />;
       }
 
       if (node.type === 'list-item') {
         return (
-          <li key={index} style={{ marginBottom: '10px', lineHeight: '1.8', color: theme.textBody, fontFamily: "'Inter', sans-serif" }}>
+          <Typography component="li" key={index} sx={{ mb: '10px', lineHeight: '1.8', color: theme.textBody, fontFamily: "'Inter', sans-serif", maxWidth: '850px' }}>
             {node.children ? node.children.map((child, i) => renderNode(child, i)) : ''}
-          </li>
+          </Typography>
         );
       }
 
       return (
-        <p key={index} style={{ marginBottom: '20px', lineHeight: '1.8', color: theme.textBody, fontFamily: "'Inter', sans-serif" }}>
+        <Typography key={index} paragraph sx={{ mb: '20px', lineHeight: '1.8', color: theme.textBody, fontFamily: "'Inter', sans-serif", maxWidth: '850px' }}>
           {node.children ? node.children.map((child, i) => renderNode(child, i)) : ''}
-        </p>
+        </Typography>
       );
     }
 
     if (node.text !== undefined) {
-      let el = node.text;
-      if (node.bold) el = <strong key={index} style={{ color: theme.textMain, fontFamily: "'Inter', sans-serif" }}>{el}</strong>;
-      if (node.italic) el = <em key={index} style={{ fontFamily: "'Inter', sans-serif" }}>{el}</em>;
-      return el;
+      let el = highlightText(node.text);
+      if (node.bold) el = <Box component="strong" sx={{ color: theme.textMain, fontFamily: "'Inter', sans-serif" }}>{el}</Box>;
+      if (node.italic) el = <Box component="em" sx={{ fontFamily: "'Inter', sans-serif" }}>{el}</Box>;
+      return <React.Fragment key={index}>{el}</React.Fragment>;
     }
 
     if (node.type === 'link') {
       return (
-        <a key={index} href={node.url} target="_blank" rel="noopener noreferrer" style={{ color: theme.accent, textDecoration: 'underline', fontFamily: "'Inter', sans-serif" }}>
+        <MuiLink key={index} href={node.url} target="_blank" rel="noopener noreferrer" sx={{ color: theme.accent, textDecoration: 'underline', fontFamily: "'Inter', sans-serif" }}>
           {node.children ? node.children.map((child, i) => renderNode(child, i)) : ''}
-        </a>
+        </MuiLink>
       );
     }
 
     if (node.type === 'list') {
       const ListTag = node.format === 'ordered' ? 'ol' : 'ul';
       return (
-        <ListTag key={index} style={{ paddingLeft: '20px', marginBottom: '25px', color: theme.textBody, fontFamily: "'Inter', sans-serif" }}>
+        <Box component={ListTag} key={index} sx={{ pl: '20px', mb: '25px', color: theme.textBody, fontFamily: "'Inter', sans-serif", maxWidth: '850px' }}>
           {node.children ? node.children.map((child, i) => renderNode(child, i)) : ''}
-        </ListTag>
+        </Box>
       );
     }
 
@@ -200,23 +352,7 @@ const Documentation = () => {
       if (!imgUrl) return null;
       const fullUrl = imgUrl.startsWith('http') ? imgUrl : `http://localhost:1337${imgUrl}`;
       return (
-        <Box
-          component="img"
-          key={index}
-          src={fullUrl}
-          alt={node.image?.alternativeText || 'Gambar Panduan'}
-          sx={{
-            width: '100%',
-            maxWidth: { xs: '100%', md: '800px' },
-            height: 'auto',
-            borderRadius: '8px',
-            display: 'block',
-            mx: 'auto',
-            my: 5,
-            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-            border: `1px solid ${theme.border}`
-          }}
-        />
+        <Box component="img" key={index} src={fullUrl} alt={node.image?.alternativeText || 'Guide Image'} sx={{ width: '100%', maxWidth: { xs: '100%', md: '800px' }, height: 'auto', borderRadius: '8px', display: 'block', mx: 'auto', my: 5, boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: `1px solid ${theme.border}` }} />
       );
     }
 
@@ -226,9 +362,7 @@ const Documentation = () => {
   const parseRichText = (contentData) => {
     if (!contentData) return null;
     if (typeof contentData === 'string') return <Typography sx={{ fontFamily: "'Inter', sans-serif" }}>{contentData}</Typography>;
-    if (Array.isArray(contentData)) {
-      return contentData.map((block, index) => renderNode(block, index));
-    }
+    if (Array.isArray(contentData)) return contentData.map((block, index) => renderNode(block, index));
     return null;
   };
 
@@ -236,105 +370,73 @@ const Documentation = () => {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', bgcolor: theme.bg, flexDirection: 'column', gap: 2 }}>
         <CircularProgress sx={{ color: theme.accent }} />
-        <Typography sx={{ color: theme.textMuted, fontFamily: "'Inter', sans-serif" }}>Memuatkan manual sistem...</Typography>
+        <Typography sx={{ color: theme.textMuted, fontFamily: "'Inter', sans-serif" }}>
+          {language === 'ms' ? 'Memuatkan manual sistem...' : 'Loading system manual...'}
+        </Typography>
       </Box>
     );
   }
 
-  // ==========================================
-  // CARI ARTIKEL INTRODUCTION DI DALAM STRAPI
-  // ==========================================
-  const introArticle = articles.find(item => {
-    const attr = item.attributes || item;
-    const title = attr.title || attr.Title || "";
-    return title.toLowerCase().includes('introduction') || title.toLowerCase().includes('prologue');
+  let introArticle = prologueArticles.find(item => {
+    const title = (item.attributes || item).title || "";
+    return title.toLowerCase().trim() === 'prologue' || title.toLowerCase().trim() === 'prolog';
+  }) || articles.find(item => {
+    const title = (item.attributes || item).title || "";
+    return title.toLowerCase().trim() === 'prologue' || title.toLowerCase().trim() === 'prolog';
   });
 
-  // Tapis senarai panduan biasa (kecualikan Introduction dari senarai nombor 1-7 di bawahnya)
+  const prologueSubs = prologueArticles.filter(item => {
+    const title = (item.attributes || item).title || "";
+    return title.toLowerCase().trim() !== 'prologue' && title.toLowerCase().trim() !== 'prolog';
+  });
+
   const guidelineArticles = articles.filter(item => {
-    const attr = item.attributes || item;
-    const title = attr.title || attr.Title || "";
-    return !title.toLowerCase().includes('introduction') && !title.toLowerCase().includes('prologue');
+    const lower = ((item.attributes || item).title || "").toLowerCase().trim();
+    return lower !== 'prologue' && lower !== 'prolog' &&
+      !lower.startsWith('prologue:') && !lower.startsWith('prologue -') &&
+      !lower.startsWith('prolog:') && !lower.startsWith('prolog -');
   });
 
-  const totalSlots = 7;
   const displayCards = [];
-
-  for (let i = 0; i < totalSlots; i++) {
-    if (guidelineArticles[i]) {
-      displayCards.push(guidelineArticles[i]);
-    } else {
-      displayCards.push({
-        isEmptySlot: true,
-        id: `empty-${i}`,
-        slotNumber: i + 1,
-        fallbackTitle: `${i + 1}. Topik Belum Ditetapkan`,
-        fallbackContent: "Maaf, panduan untuk langkah ini masih belum dimasukkan oleh admin ke dalam sistem Strapi."
-      });
-    }
+  for (let i = 0; i < 7; i++) {
+    if (guidelineArticles[i]) displayCards.push(guidelineArticles[i]);
+    else displayCards.push({ isEmptySlot: true, id: `empty-${i}`, fallbackTitle: `${i + 1}. ${language === 'ms' ? 'Topik Belum Ditetapkan' : 'Topic Not Set'}` });
   }
 
-  const filteredCards = displayCards.filter(item => {
-    const attr = item.attributes || item;
-    const title = item.isEmptySlot ? item.fallbackTitle : (attr.title || attr.Title || "Tanpa Tajuk");
-    return title.toLowerCase().includes(searchTerm.toLowerCase());
-  });
-
-  // ==========================================
-  // PEMILIHAN ARTIKEL AKTIF & TROUBLESHOOTING
-  // ==========================================
   const isTroubleshootActive = articleId === 'troubleshooting_page';
   let selectedArticle = null;
 
   if (!isTroubleshootActive) {
-    // KEMASKINI: Sentiasa auto pergi ke introduction jika tiada articleId (buang halaman grid)
-    if (!articleId || articleId === 'introduction') {
+    if (!articleId || articleId === 'prologue') {
       selectedArticle = introArticle || {
         id: 'intro-fallback',
-        attributes: {
-          title: 'Introduction',
-          Content: [{ type: 'paragraph', children: [{ text: 'Sila buat dan Publish satu artikel bertajuk "Introduction" di dalam Strapi awak.' }] }]
-        }
+        attributes: { title: 'Prologue', Content: [{ type: 'paragraph', children: [{ text: language === 'ms' ? 'Sila buat artikel bertajuk "Prologue".' : 'Please create an article titled "Prologue".' }] }] }
       };
     } else {
-      selectedArticle = displayCards.find((item) => String(item.id) === String(articleId)) || null;
+      selectedArticle = displayCards.find(item => String(item.id) === String(articleId)) ||
+        prologueSubs.find(item => String(item.id) === String(articleId)) || null;
     }
   }
 
   let tajuk = "";
   let kandungan = null;
   let chunks = [];
-  let leftSubMenu = []; 
-  let rightPageToc = []; 
+  let leftSubMenu = [];
+  let rightPageToc = [];
 
   if (selectedArticle && !isTroubleshootActive) {
     if (selectedArticle.isEmptySlot) {
       tajuk = selectedArticle.fallbackTitle;
-      kandungan = <Typography sx={{ color: theme.textMuted, fontStyle: 'italic', mt: 2, fontFamily: "'Inter', sans-serif" }}>{selectedArticle.fallbackContent}</Typography>;
+      kandungan = <Typography sx={{ color: theme.textMuted, fontStyle: 'italic', mt: 2, fontFamily: "'Inter', sans-serif" }}>Tiada panduan.</Typography>;
     } else {
       const attr = selectedArticle.attributes || selectedArticle;
-      tajuk = attr.title || attr.Title || "Tanpa Tajuk";
+      tajuk = (attr.title || attr.Title || "Tanpa Tajuk").replace(/^(Prologue|Prolog)\s*[:-]\s*/i, '');
       const contentData = attr.Content || attr.content || attr.Description || attr.description;
 
       if (Array.isArray(contentData)) {
-        const headings = contentData.filter(n => n.type === 'heading');
-        const sliceLevel = headings.length > 0 ? Math.min(...headings.map(n => n.level || 2)) : 2;
-
-        let currentSectionId = 'intro';
-        let currentNodes = [];
-
-        contentData.forEach((node, index) => {
-          if (node.type === 'heading' && (node.level || 2) === sliceLevel) {
-            chunks.push({ id: currentSectionId, nodes: currentNodes });
-            currentSectionId = `sub-${index}`;
-            currentNodes = [node];
-            const text = node.children ? node.children.map(c => c.text).join('') : '';
-            leftSubMenu.push({ id: currentSectionId, text, level: node.level || 2 });
-          } else {
-            currentNodes.push(node);
-          }
-        });
-        chunks.push({ id: currentSectionId, nodes: currentNodes });
+        const parsed = getArticleChunks(contentData);
+        chunks = parsed.chunks;
+        leftSubMenu = parsed.leftSubMenu;
       } else {
         chunks.push({ id: 'intro', nodes: contentData });
       }
@@ -342,7 +444,9 @@ const Documentation = () => {
       let nodesToDisplay = [];
       if (activeSub) {
         const foundChunk = chunks.find(c => c.id === activeSub);
-        nodesToDisplay = foundChunk ? foundChunk.nodes : [];
+        const activeSubItem = leftSubMenu.find(s => s.id === activeSub);
+        if (activeSubItem) tajuk = activeSubItem.text;
+        if (foundChunk && Array.isArray(foundChunk.nodes)) nodesToDisplay = foundChunk.nodes.slice(1);
       } else {
         const introChunk = chunks.find(c => c.id === 'intro');
         nodesToDisplay = introChunk ? introChunk.nodes : [];
@@ -350,10 +454,7 @@ const Documentation = () => {
 
       if (Array.isArray(nodesToDisplay)) {
         nodesToDisplay.forEach((node, idx) => {
-          if (node.type === 'heading' && idx !== 0) { 
-            const text = node.children ? node.children.map(c => c.text).join('') : '';
-            rightPageToc.push({ id: `heading-${idx}`, text, level: node.level || 3 });
-          }
+          if (node.type === 'heading') rightPageToc.push({ id: `heading-${idx}`, text: node.children ? node.children.map(c => c.text).join('') : '', level: node.level || 3 });
         });
       }
 
@@ -361,254 +462,60 @@ const Documentation = () => {
     }
   }
 
-  const isIntroActive = !articleId || articleId === 'introduction';
+  const isPrologueGroupActive = !articleId || articleId === 'prologue' || prologueSubs.some(item => String(item.id) === String(articleId));
+
+  const sidebarProps = {
+    isIntroActive: isPrologueGroupActive,
+    prologueSubs: prologueSubs,
+    prologueMainId: introArticle ? introArticle.id : 'prologue',
+    filteredCards: displayCards,
+    articleId, activeSub, leftSubMenu, setSearchParams, isTroubleshootActive, language
+  };
+
+  const rightTocContent = !isTroubleshootActive && rightPageToc.length > 0 ? (
+    <Box>
+      {/* KEMAS KINI: TAJUK TOC KINI GUNA FON SORA */}
+      <Typography sx={{ fontFamily: "'Sora', Inter", color: theme.textMain, fontWeight: '700', fontSize: '14px', mb: 3 }}>
+        <span style={{ marginRight: '8px', display: 'inline-block', width: '16px', height: '2px', backgroundColor: theme.textMuted }}></span>
+        {language === 'ms' ? 'Di halaman ini' : 'On this page'}
+      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, fontSize: '13px' }}>
+        {rightPageToc.map(heading => (
+          <Typography key={heading.id} component="a" href={`#${heading.id}`} sx={{ fontFamily: "'Inter', sans-serif", color: theme.textMuted, textDecoration: 'none', pl: (heading.level - 2) * 1.5, borderLeft: '2px solid transparent', '&:hover': { color: theme.textMain, borderLeft: `2px solid ${theme.accent}` } }}>
+            {heading.text}
+          </Typography>
+        ))}
+      </Box>
+    </Box>
+  ) : null;
 
   return (
-    <Box sx={{ bgcolor: theme.bg, color: theme.textBody, minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
-      <CssBaseline />
-
-      {/* TOP NAVIGATION BAR */}
-      <Box 
-        component="header" 
-        sx={{ 
-          position: 'sticky', top: 0, zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-          height: '64px', px: { xs: 2, md: 4 }, bgcolor: theme.headerBg, borderBottom: `1px solid ${theme.border}`
-        }}
-      >
-        {/* LOGO MYSZTECH POS */}
-        <Typography 
-          onClick={() => setSearchParams({ id: 'introduction' })}
-          sx={{ 
-            fontFamily: "'Sora', sans-serif", color: theme.accent, fontWeight: '800', fontSize: '20px', 
-            letterSpacing: '1px', width: { xs: 'auto', md: '248px' }, cursor: 'pointer', transition: 'opacity 0.2s',
-            '&:hover': { opacity: 0.8 }
-          }}
-        >
-          MYSZTECH POS
-        </Typography>
-
-        <Box 
-          sx={{ 
-            display: { xs: 'none', md: 'flex' }, alignItems: 'center', bgcolor: theme.searchBg, borderRadius: '8px', px: 2, py: 0.5, 
-            width: { md: '500px', lg: '650px' }, 
-            border: `1px solid transparent`, '&:hover': { borderColor: theme.borderHover }, transition: 'border-color 0.2s'
-          }}
-        >
-          <SearchIcon sx={{ color: theme.textMuted, fontSize: 20, mr: 1 }} />
-          <InputBase
-            inputRef={searchInputRef}
-            placeholder="Search"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            sx={{ color: theme.textMain, flexGrow: 1, fontFamily: "'Inter', sans-serif", fontSize: '14px' }}
-          />
-          <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: theme.bg, px: 1, py: 0.2, borderRadius: '4px', border: `1px solid ${theme.border}` }}>
-            <Typography sx={{ fontSize: '12px', color: theme.textMuted, fontWeight: 'bold' }}>⌘K</Typography>
-          </Box>
+    <PageLayout
+      theme={theme} isDarkMode={isDarkMode} toggleTheme={toggleTheme} language={language} toggleLanguage={toggleLanguage}
+      searchTerm={searchTerm} setSearchTerm={setSearchTerm}
+      searchFocused={searchFocused} setSearchFocused={setSearchFocused}
+      searchResults={searchResults} onSearchResultClick={handleSearchResultClick} highlightMatch={highlightMatch}
+      setSearchParams={setSearchParams} sidebarProps={sidebarProps} rightToc={rightTocContent}
+    >
+      {isTroubleshootActive ? (
+        <Box sx={{ animation: 'fadeIn 0.3s ease-in-out' }}>
+          <Troubleshooting isDarkMode={isDarkMode} language={language} />
         </Box>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton onClick={toggleTheme} sx={{ color: theme.textMain }}>
-            {isDarkMode ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
-          </IconButton>
+      ) : selectedArticle ? (
+        <Box>
+          <Button onClick={() => { if (activeSub) setSearchParams({ id: articleId }); else setSearchParams({}); }} startIcon={<ArrowBackIcon />} sx={{ display: { xs: 'inline-flex', md: 'none' }, mb: 3, color: theme.textMuted, textTransform: 'none', fontWeight: '600', fontFamily: "'Inter', sans-serif" }}>
+            {activeSub ? (language === 'ms' ? 'Kembali ke Menu Topik' : 'Back to Topic Menu') : (language === 'ms' ? 'Kembali ke Panduan' : 'Back to Guidelines')}
+          </Button>
+          {/* KEMAS KINI: TAJUK UTAMA ARTIKEL KINI GUNA FON SORA */}
+          <Typography variant="h2" sx={{ fontFamily: "'Sora', Inter", color: theme.textMain, fontWeight: '700', mb: 4, letterSpacing: '-1px', fontSize: { xs: '32px', md: '42px' }, maxWidth: '850px' }}>
+            {highlightText(tajuk)}
+          </Typography>
+          {loading ? <CircularProgress sx={{ color: theme.accent }} /> : kandungan}
         </Box>
-      </Box>
-
-      {/* BAHAGIAN KANDUNGAN BAWAH */}
-      <Box sx={{ display: 'flex', maxWidth: '1440px', mx: 'auto' }}>
-        
-        {/* LAJUR 1: MENU NAVIGASI KIRI */}
-        <Box 
-          component="nav" 
-          sx={{ 
-            width: 280, display: { xs: 'none', md: 'flex' }, flexDirection: 'column', flexShrink: 0, p: 4, bgcolor: theme.sidebarBg,
-            height: 'calc(100vh - 64px)', position: 'sticky', top: '64px', overflowY: 'auto',
-            '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: theme.borderHover, borderRadius: '4px' }
-          }}
-        >
-          <Box sx={{ flexGrow: 1 }}>
-            
-            {/* INTRODUCTION */}
-            <Typography 
-              onClick={() => setSearchParams({ id: 'introduction' })}
-              sx={{ 
-                color: isIntroActive ? theme.accent : theme.textMain, 
-                fontWeight: '700', mb: 3, fontFamily: "'Inter', sans-serif", fontSize: '16px',
-                cursor: 'pointer', transition: 'color 0.2s',
-                '&:hover': { color: theme.accent }
-              }}
-            >
-              Introduction
-            </Typography>
-
-            {/* USER GUIDELINES */}
-            <Typography sx={{ color: theme.textMain, fontWeight: '700', mb: 3, fontFamily: "'Inter', sans-serif", fontSize: '16px' }}>
-              User Guidelines
-            </Typography>
-            
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pl: 2, borderLeft: `1px solid ${theme.borderHover}` }}>
-              {filteredCards.length === 0 && (
-                <Typography sx={{ color: theme.textMuted, fontSize: '13px', fontStyle: 'italic', py: 1 }}>
-                  Tiada topik dijumpai.
-                </Typography>
-              )}
-              {filteredCards.map(item => {
-                const isActive = String(item.id) === String(articleId);
-                const attr = item.attributes || item;
-                const menuTajuk = item.isEmptySlot ? item.fallbackTitle : (attr.title || attr.Title || "Tanpa Tajuk");
-
-                return (
-                  <React.Fragment key={item.id}>
-                    <Typography
-                      onClick={() => !item.isEmptySlot && setSearchParams({ id: item.id })}
-                      sx={{
-                        fontFamily: "'Inter', sans-serif", cursor: item.isEmptySlot ? 'not-allowed' : 'pointer',
-                        color: (isActive && !activeSub) ? theme.accent : (item.isEmptySlot ? theme.textMuted : theme.textBody),
-                        ml: '-1px', borderLeft: (isActive && !activeSub) ? `2px solid ${theme.accent}` : '2px solid transparent',
-                        pl: 1.5, py: 0.5, fontSize: '14px', fontWeight: isActive ? '600' : 'normal', transition: 'all 0.2s',
-                        '&:hover': { color: item.isEmptySlot ? theme.textMuted : theme.textMain }
-                      }}
-                    >
-                      {menuTajuk}
-                    </Typography>
-
-                    {isActive && leftSubMenu.length > 0 && (
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, pl: 3, mb: 1, mt: -0.5 }}>
-                        {leftSubMenu.map(heading => {
-                          const isSubActive = activeSub === heading.id;
-                          return (
-                            <Typography
-                              key={heading.id}
-                              onClick={() => setSearchParams({ id: item.id, sub: heading.id })}
-                              sx={{
-                                fontFamily: "'Inter', sans-serif", color: isSubActive ? theme.accent : theme.textMuted, 
-                                fontWeight: isSubActive ? '600' : 'normal', cursor: 'pointer', fontSize: '13px',
-                                display: 'block', transition: 'color 0.2s', '&:hover': { color: theme.textMain }
-                              }}
-                            >
-                              {heading.text}
-                            </Typography>
-                          )
-                        })}
-                      </Box>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </Box>
-
-            {/* TROUBLESHOOTING DARI KOMPONEN KASTAM */}
-            <Typography sx={{ color: theme.textMain, fontWeight: '700', mt: 4, mb: 3, fontFamily: "'Inter', sans-serif", fontSize: '16px' }}>
-              Support
-            </Typography>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pl: 2, borderLeft: `1px solid ${theme.borderHover}` }}>
-              <Typography
-                onClick={() => setSearchParams({ id: 'troubleshooting_page' })}
-                sx={{
-                  fontFamily: "'Inter', sans-serif", cursor: 'pointer',
-                  color: isTroubleshootActive ? theme.accent : theme.textBody,
-                  ml: '-1px', borderLeft: isTroubleshootActive ? `2px solid ${theme.accent}` : '2px solid transparent',
-                  pl: 1.5, py: 0.5, fontSize: '14px', fontWeight: isTroubleshootActive ? '600' : 'normal', transition: 'all 0.2s',
-                  '&:hover': { color: theme.textMain }
-                }}
-              >
-                Troubleshooting
-              </Typography>
-            </Box>
-
-          </Box>
-        </Box>
-
-        {/* LAJUR 2: KANDUNGAN TENGAH */}
-        <Box component="main" sx={{ flexGrow: 1, p: { xs: 3, sm: 5, md: 6, lg: 8 }, maxWidth: '850px', width: '100%' }}>
-          
-          <Box sx={{ display: { xs: 'flex', md: 'none' }, mb: 4, alignItems: 'center', bgcolor: theme.searchBg, borderRadius: '8px', px: 2, py: 0.5 }}>
-            <SearchIcon sx={{ color: theme.textMuted, fontSize: 20, mr: 1 }} />
-            <InputBase
-              placeholder="Cari topik..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{ color: theme.textMain, flexGrow: 1, fontFamily: "'Inter', sans-serif", fontSize: '14px' }}
-            />
-          </Box>
-
-          {/* JIKA TROUBLESHOOTING AKTIF, PAPARKAN KOMPONEN JSX TERSEBUT */}
-          {isTroubleshootActive ? (
-            <Box sx={{ animation: 'fadeIn 0.3s ease-in-out' }}>
-             {/* GANTIKAN BARIS INI */}
-            <Troubleshooting isDarkMode={isDarkMode} />
-            </Box>
-          ) : selectedArticle ? (
-            <Box>
-              <Button
-                onClick={() => { if (activeSub) setSearchParams({ id: articleId }); else setSearchParams({}); }}
-                startIcon={<ArrowBackIcon />}
-                sx={{ display: { xs: 'inline-flex', md: 'none' }, mb: 3, color: theme.textMuted, textTransform: 'none', fontWeight: '600', fontFamily: "'Inter', sans-serif", '&:hover': { color: theme.textMain } }}
-              >
-                {activeSub ? 'Back to Topic Menu' : 'Back to Guidelines'}
-              </Button>
-
-              <Typography variant="h2" sx={{ fontFamily: "'Sora', sans-serif", color: theme.textMain, fontWeight: '700', mb: 4, letterSpacing: '-1px', fontSize: { xs: '32px', md: '42px' } }}>
-                {tajuk}
-              </Typography>
-              
-              {kandungan}
-            </Box>
-          ) : (
-            <Typography sx={{ color: theme.textMuted, fontStyle: 'italic' }}>Tiada kandungan dijumpai.</Typography>
-          )}
-        </Box>
-
-        {/* LAJUR 3: ISI KANDUNGAN KANAN (TOC) */}
-        <Box 
-          component="aside" 
-          sx={{ 
-            display: { xs: 'none', lg: 'block' }, width: 280, flexShrink: 0, p: 4,
-            height: 'calc(100vh - 64px)', position: 'sticky', top: '64px', overflowY: 'auto',
-            '&::-webkit-scrollbar': { width: '4px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: theme.borderHover, borderRadius: '4px' }
-          }}
-        >
-          {/* TOC Disembunyikan semasa Troubleshooting aktif */}
-          {!isTroubleshootActive && rightPageToc.length > 0 && (
-            <Box>
-              <Typography sx={{ fontFamily: "'Inter', sans-serif", color: theme.textMain, fontWeight: '600', fontSize: '14px', mb: 3, display: 'flex', alignItems: 'center' }}>
-                <span style={{ marginRight: '8px', display: 'inline-block', width: '16px', height: '2px', backgroundColor: theme.textMuted }}></span>
-                On this page
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, fontSize: '13px' }}>
-                {rightPageToc.map(heading => (
-                  <Typography
-                    key={heading.id}
-                    component="a"
-                    href={`#${heading.id}`}
-                    sx={{
-                      fontFamily: "'Inter', sans-serif", color: theme.textMuted, textDecoration: 'none',
-                      pl: (heading.level - 2) * 1.5, borderLeft: '2px solid transparent', transition: 'all 0.2s',
-                      '&:hover': { color: theme.textMain, borderLeft: `2px solid ${theme.accent}`, pl: ((heading.level - 2) * 1.5) + 1 }
-                    }}
-                  >
-                    {heading.text}
-                  </Typography>
-                ))}
-              </Box>
-            </Box>
-          )}
-        </Box>
-      </Box>
-
-      <style>{`
-        body { 
-          background-color: ${theme.bg}; 
-          margin: 0;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-    </Box>
+      ) : (
+        <Typography sx={{ color: theme.textMuted, fontStyle: 'italic' }}>Tiada kandungan dijumpai.</Typography>
+      )}
+    </PageLayout>
   );
 };
 

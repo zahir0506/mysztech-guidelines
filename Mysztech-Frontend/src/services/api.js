@@ -5,18 +5,19 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_STRAPI_API_URL,
 });
 
-// Fungsi untuk menarik data dari koleksi "Article" (berdasarkan nama yang awak set di Strapi)
-export const getArticles = () => api.get('/articles?sort=Title:asc&populate=*');
+// Tambah parameter "locale" dengan default 'en' pada semua fungsi
+export const getArticles = (locale = 'en') => api.get(`/articles?locale=${locale}&sort=Title:asc&populate=*`);
 
-// Fungsi tambahan untuk koleksi lain jika awak dah bina di Strapi nanti
-export const getCategories = () => api.get('/categories?populate=*');
-export const getFaqs = () => api.get('/faqs?populate=*');
-// Tambah di bawah sekali
-export const getWhatToDos = () => api.get('/what-to-dos?populate=*');
-export const getWhatNotToDos = () => api.get('/what-not-to-dos?populate=*');
+export const getCategories = (locale = 'en') => api.get(`/categories?locale=${locale}&populate=*`);
+export const getFaqs = (locale = 'en') => api.get(`/faqs?locale=${locale}&populate=*`);
 
-// Tambahkan kod ini di bawah sekali dalam fail api.js awak
-export const getFaq1 = () => api.get('/faq-1s?populate=*');
-export const getFaq2 = () => api.get('/faq-2s?populate=*');
-export const getFaq3 = () => api.get('/faq-3s?populate=*');
-export const getFaq4 = () => api.get('/faq-4s?populate=*');
+// Fungsi untuk Troubleshooting
+export const getWhatToDos = (locale = 'en') => api.get(`/what-to-dos?locale=${locale}&populate=*`);
+export const getWhatNotToDos = (locale = 'en') => api.get(`/what-not-to-dos?locale=${locale}&populate=*`);
+
+export const getFaq1 = (locale = 'en') => api.get(`/faq-1s?locale=${locale}&populate=*`);
+export const getFaq2 = (locale = 'en') => api.get(`/faq-2s?locale=${locale}&populate=*`);
+export const getFaq3 = (locale = 'en') => api.get(`/faq-3s?locale=${locale}&populate=*`);
+export const getFaq4 = (locale = 'en') => api.get(`/faq-4s?locale=${locale}&populate=*`);
+
+export const getPrologues = (locale = 'en') => api.get(`/prologues?locale=${locale}&sort=Title:asc&populate=*`);

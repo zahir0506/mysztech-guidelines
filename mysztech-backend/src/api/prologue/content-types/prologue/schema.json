@@ -1,10 +1,10 @@
 {
   "kind": "collectionType",
-  "collectionName": "what_to_dos",
+  "collectionName": "prologues",
   "info": {
-    "singularName": "what-to-do",
-    "pluralName": "what-to-dos",
-    "displayName": "WhatToDo"
+    "singularName": "prologue",
+    "pluralName": "prologues",
+    "displayName": "Prologue"
   },
   "options": {
     "draftAndPublish": true
@@ -15,7 +15,7 @@
     }
   },
   "attributes": {
-    "title": {
+    "Title": {
       "type": "string",
       "pluginOptions": {
         "i18n": {
