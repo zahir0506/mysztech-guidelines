@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link as RouterLink } from 'react-router-dom';
 import { getArticles, getPrologues } from '../services/api';
 
 import Troubleshooting from './Troubleshooting';
@@ -191,6 +191,7 @@ const Documentation = () => {
 
         if (Array.isArray(chunk.nodes)) {
           let chunkText = chunk.nodes.map(node => getFullTextHelper(node)).join(' ');
+
           chunkText = chunkText
             .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '')
             .replace(/https?:\/\/[^\s]+/g, '')
@@ -270,7 +271,7 @@ const Documentation = () => {
           key={index}
           id={`heading-${index}`}
           variant={`h${level}`}
-          sx={{ fontFamily: "'Sora', Inter", color: theme.textMain, mt: '25px', mb: '15px', fontSize: fontSize, fontWeight: '700', scrollMarginTop: '100px', maxWidth: '850px' }}
+          sx={{ fontFamily: "'Sora', sans-serif", color: theme.textMain, mt: '25px', mb: '15px', fontSize: fontSize, fontWeight: '700', scrollMarginTop: '100px', maxWidth: '850px' }}
         >
           {highlightText(fullString)}
         </Typography>
@@ -331,8 +332,81 @@ const Documentation = () => {
     }
 
     if (node.type === 'link') {
+      const url = node.url || '';
+      const linkText = node.children ? node.children.map(c => c.text || '').join('') : '';
+
+      if (linkText.toLowerCase().includes('management hub')) {
+        return (
+          <MuiLink
+            component="button"
+            key={index}
+            onClick={() => {
+              const allDocs = [...prologueArticles, ...articles];
+              let targetId, targetSub;
+              for (const doc of allDocs) {
+                const attr = doc.attributes || doc;
+                const contentData = attr.Content || attr.content || attr.Description || attr.description;
+                if (!contentData) continue;
+
+                const { chunks, leftSubMenu } = getArticleChunks(contentData);
+                const subItem = leftSubMenu.find(s => s.text.toLowerCase().includes('management hub'));
+
+                if (subItem) {
+                  targetId = doc.id;
+                  targetSub = subItem.id;
+                  break;
+                }
+              }
+
+              if (targetId) {
+                setSearchParams({ id: targetId, sub: targetSub });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              } else {
+                console.warn('Target section not found for Management Hub');
+              }
+            }}
+            sx={{
+              color: theme.accent,
+              textDecoration: 'underline',
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: '600',
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              fontSize: 'inherit',
+              '&:hover': { opacity: 0.8 }
+            }}
+          >
+            {node.children ? node.children.map((child, i) => renderNode(child, i)) : ''}
+          </MuiLink>
+        );
+      }
+
+      if (url.includes('?id=')) {
+        const queryString = url.substring(url.indexOf('?'));
+
+        return (
+          <MuiLink
+            component={RouterLink}
+            to={`/docs${queryString}`}
+            key={index}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            sx={{
+              color: theme.accent,
+              textDecoration: 'underline',
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: '600',
+              '&:hover': { opacity: 0.8 }
+            }}
+          >
+            {node.children ? node.children.map((child, i) => renderNode(child, i)) : ''}
+          </MuiLink>
+        );
+      }
+
       return (
-        <MuiLink key={index} href={node.url} target="_blank" rel="noopener noreferrer" sx={{ color: theme.accent, textDecoration: 'underline', fontFamily: "'Inter', sans-serif" }}>
+        <MuiLink key={index} href={url} target="_blank" rel="noopener noreferrer" sx={{ color: theme.accent, textDecoration: 'underline', fontFamily: "'Inter', sans-serif" }}>
           {node.children ? node.children.map((child, i) => renderNode(child, i)) : ''}
         </MuiLink>
       );
@@ -359,12 +433,81 @@ const Documentation = () => {
     return null;
   };
 
+  // ==========================================
+  // KEMAS KINI: PARSER SISTEM TAG KOTAK WARNA
+  // ==========================================
   const parseRichText = (contentData) => {
     if (!contentData) return null;
     if (typeof contentData === 'string') return <Typography sx={{ fontFamily: "'Inter', sans-serif" }}>{contentData}</Typography>;
-    if (Array.isArray(contentData)) return contentData.map((block, index) => renderNode(block, index));
+    
+    if (Array.isArray(contentData)) {
+      const elements = [];
+      let isInsideBox = false;
+      let currentBoxNodes = [];
+      let boxType = 'blue';
+
+      contentData.forEach((block, index) => {
+        const text = getFullTextHelper(block).trim();
+
+        // 1. TANGKAP PEMBUKA KOTAK (Sekarang ia akan kenal [KOTAK] dan [KOTAK OREN])
+        if (text.includes('[KOTAK]') || text.includes('[KOTAK OREN]')) {
+          isInsideBox = true;
+          boxType = text.toUpperCase().includes('OREN') ? 'orange' : 'blue';
+          return; 
+        }
+
+        // 2. TANGKAP PENUTUP KOTAK
+        if (text.includes('[/KOTAK]')) {
+          isInsideBox = false;
+          
+          const bgColor = boxType === 'orange' ? '#fd7e14' : '#0c6b8a';
+          const textColor = boxType === 'orange' ? '#111827' : '#ffffff';
+          const borderColor = boxType === 'orange' ? '#111827' : '#064459';
+
+          elements.push(
+            <Box
+              key={`box-${index}`}
+              sx={{
+                backgroundColor: bgColor,
+                border: `1.5px solid ${borderColor}`,
+                borderRadius: '6px',
+                p: 3.5,
+                mb: 4,
+                maxWidth: '850px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                animation: 'fadeIn 0.4s ease-out',
+                '& p, & span, & strong, & em, & li, & h1, & h2, & h3': { color: `${textColor} !important` },
+                '& ul, & ol': { paddingLeft: '24px', marginBottom: 0 },
+                '& ul': { listStyleType: 'disc' },
+                '& ul ul': { listStyleType: 'circle', mt: 1 },
+                '& ul ul ul': { listStyleType: 'square', mt: 1 }
+              }}
+            >
+              {currentBoxNodes.map((n, i) => renderNode(n, `box-content-${index}-${i}`))}
+            </Box>
+          );
+          currentBoxNodes = []; 
+          return; 
+        }
+
+        // 3. KUMPUL ATAU PAPARKAN
+        if (isInsideBox) {
+          currentBoxNodes.push(block);
+        } else {
+          elements.push(renderNode(block, index));
+        }
+      });
+
+      // Keselamatan jika terlupa letak [/KOTAK]
+      if (currentBoxNodes.length > 0) {
+        elements.push(<Box key="unclosed-box">{currentBoxNodes.map((n, i) => renderNode(n, `unclosed-${i}`))}</Box>);
+      }
+
+      return elements;
+    }
     return null;
   };
+  // ==========================================
 
   if (loading) {
     return (
@@ -413,7 +556,7 @@ const Documentation = () => {
         attributes: { title: 'Prologue', Content: [{ type: 'paragraph', children: [{ text: language === 'ms' ? 'Sila buat artikel bertajuk "Prologue".' : 'Please create an article titled "Prologue".' }] }] }
       };
     } else {
-      selectedArticle = displayCards.find(item => String(item.id) === String(articleId)) ||
+      selectedArticle = guidelineArticles.find(item => String(item.id) === String(articleId)) ||
         prologueSubs.find(item => String(item.id) === String(articleId)) || null;
     }
   }
@@ -474,8 +617,7 @@ const Documentation = () => {
 
   const rightTocContent = !isTroubleshootActive && rightPageToc.length > 0 ? (
     <Box>
-      {/* KEMAS KINI: TAJUK TOC KINI GUNA FON SORA */}
-      <Typography sx={{ fontFamily: "'Sora', Inter", color: theme.textMain, fontWeight: '700', fontSize: '14px', mb: 3 }}>
+      <Typography sx={{ fontFamily: "'Sora', sans-serif", color: theme.textMain, fontWeight: '700', fontSize: '14px', mb: 3 }}>
         <span style={{ marginRight: '8px', display: 'inline-block', width: '16px', height: '2px', backgroundColor: theme.textMuted }}></span>
         {language === 'ms' ? 'Di halaman ini' : 'On this page'}
       </Typography>
@@ -503,11 +645,8 @@ const Documentation = () => {
         </Box>
       ) : selectedArticle ? (
         <Box>
-          <Button onClick={() => { if (activeSub) setSearchParams({ id: articleId }); else setSearchParams({}); }} startIcon={<ArrowBackIcon />} sx={{ display: { xs: 'inline-flex', md: 'none' }, mb: 3, color: theme.textMuted, textTransform: 'none', fontWeight: '600', fontFamily: "'Inter', sans-serif" }}>
-            {activeSub ? (language === 'ms' ? 'Kembali ke Menu Topik' : 'Back to Topic Menu') : (language === 'ms' ? 'Kembali ke Panduan' : 'Back to Guidelines')}
-          </Button>
-          {/* KEMAS KINI: TAJUK UTAMA ARTIKEL KINI GUNA FON SORA */}
-          <Typography variant="h2" sx={{ fontFamily: "'Sora', Inter", color: theme.textMain, fontWeight: '700', mb: 4, letterSpacing: '-1px', fontSize: { xs: '32px', md: '42px' }, maxWidth: '850px' }}>
+
+          <Typography variant="h2" sx={{ fontFamily: "'Sora', sans-serif", color: theme.textMain, fontWeight: '700', mb: 4, letterSpacing: '-1px', fontSize: { xs: '32px', md: '42px' }, maxWidth: '850px' }}>
             {highlightText(tajuk)}
           </Typography>
           {loading ? <CircularProgress sx={{ color: theme.accent }} /> : kandungan}
