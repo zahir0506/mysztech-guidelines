@@ -192,7 +192,7 @@ const Troubleshooting = ({ isDarkMode = false, language = 'en' }) => {
           elevation={0}
           sx={{
             flex: 1,
-            p: { xs: 3, md: 4 },
+            p: { xs: 2.5, md: 4 },
             borderRadius: '24px',
             background: dosBg,
             border: `1px solid ${dosBorder}`,
@@ -268,7 +268,7 @@ const Troubleshooting = ({ isDarkMode = false, language = 'en' }) => {
           elevation={0}
           sx={{
             flex: 1,
-            p: { xs: 3, md: 4 },
+            p: { xs: 2.5, md: 4 },
             borderRadius: '24px',
             background: dontsBg,
             border: `1px solid ${dontsBorder}`,

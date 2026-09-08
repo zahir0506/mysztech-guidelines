@@ -1,6 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography } from '@mui/material';
 import './Sidebar.css';
+
+// KEMAS KINI: Fungsi baru untuk baca sub-topik tanpa perlu pergi ke page
+const getSubMenuItems = (item) => {
+  const attr = item.attributes || item;
+  const contentData = attr.Content || attr.content || attr.Description || attr.description;
+  let subs = [];
+
+  if (Array.isArray(contentData)) {
+    const headings = contentData.filter(n => n.type === 'heading');
+    const sliceLevel = headings.length > 0 ? Math.min(...headings.map(n => n.level || 2)) : 2;
+
+    contentData.forEach((node, index) => {
+      if (node.type === 'heading' && (node.level || 2) === sliceLevel) {
+        const text = node.children ? node.children.map(c => c.text).join('') : '';
+        subs.push({ id: `sub-${index}`, text });
+      }
+    });
+  }
+  return subs;
+};
 
 const Sidebar = ({
   isIntroActive,
@@ -15,11 +35,27 @@ const Sidebar = ({
   onMobileClose,
   language
 }) => {
+  
+  // KEMAS KINI: State untuk kawal menu dropdown mana yang terbuka
+  const [expandedTopic, setExpandedTopic] = useState(null);
+
+  // KEMAS KINI: Buka dropdown secara automatik jika pengguna me-refresh page
+  useEffect(() => {
+    if (articleId) {
+      setExpandedTopic(String(articleId));
+    }
+  }, [articleId]);
+
   const handleNavigate = (params) => {
     setSearchParams(params);
     if (onMobileClose) {
       onMobileClose();
     }
+  };
+
+  // KEMAS KINI: Fungsi untuk butang toggle (buka/tutup) dropdown
+  const toggleTopic = (id) => {
+    setExpandedTopic(prev => prev === String(id) ? null : String(id));
   };
 
   return (
@@ -82,7 +118,7 @@ const Sidebar = ({
         </Box>
 
         {/* ======================================= */}
-        {/* USER GUIDELINES */}
+        {/* USER GUIDELINES (1, 2, 3, 4, 5, 6, 7) */}
         {/* ======================================= */}
         <Typography className="sidebar-heading" sx={{ mt: 3 }}>
           {language === 'ms' ? 'Panduan Pengguna' : 'User Guidelines'}
@@ -96,14 +132,22 @@ const Sidebar = ({
           )}
           {filteredCards.map(item => {
             const isActive = String(item.id) === String(articleId);
+            const isExpanded = expandedTopic === String(item.id); // Check jika menu ni sedang kembang
             const attr = item.attributes || item;
             const menuTajuk = item.isEmptySlot ? item.fallbackTitle : (attr.title || attr.Title || "Tanpa Tajuk");
+            
+            // Dapatkan senarai sub-topik
+            const subItems = getSubMenuItems(item);
 
             return (
               <React.Fragment key={item.id}>
                 <Typography
-                  onClick={() => !item.isEmptySlot && handleNavigate({ id: item.id })}
+                  // KEMAS KINI: Klik sekarang hanya toggle menu (tidak menukar URL page)
+                  onClick={() => !item.isEmptySlot && toggleTopic(item.id)}
                   className={`sidebar-item ${item.isEmptySlot ? 'item-disabled' : ''} ${(isActive && !activeSub) ? 'active-item' : ''}`}
+                  sx={{ 
+                    cursor: item.isEmptySlot ? 'not-allowed' : 'pointer'
+                  }}
                 >
                   {menuTajuk}
                 </Typography>
@@ -121,13 +165,15 @@ const Sidebar = ({
                         </Typography>
                     ))}
                   </Box>
-                ) : (isActive && leftSubMenu.length > 0) ? (
+                ) : (isExpanded && subItems.length > 0) ? (
+                  // KEMAS KINI: Akan memaparkan senarai jika butang diklik (isExpanded)
                   <Box className="sidebar-submenu">
-                    {leftSubMenu.map(heading => {
-                      const isSubActive = activeSub === heading.id;
+                    {subItems.map(heading => {
+                      const isSubActive = isActive && activeSub === heading.id;
                       return (
                         <Typography
                           key={heading.id}
+                          // Ini baru tukar URL page ke sub-topik sebenar
                           onClick={() => handleNavigate({ id: item.id, sub: heading.id })}
                           className={`sidebar-subitem ${isSubActive ? 'active-subitem' : ''}`}
                         >
