@@ -122,7 +122,16 @@ const Documentation = () => {
   }, [language]);
 
   useEffect(() => {
-    if (!loading && (!articleId || articleId === 'prologue')) {
+    if (loading) return;
+
+    const isValidArticle = (id) => {
+      if (!id || id === 'prologue') return false;
+      if (id === 'troubleshooting_page') return true;
+      return articles.some(item => String(item.id) === String(id)) ||
+             prologueArticles.some(item => String(item.id) === String(id));
+    };
+
+    if (!isValidArticle(articleId)) {
       const findMainPrologue = (sourceArray) => {
         return sourceArray.find(item => {
           const attr = item.attributes || item;
@@ -141,6 +150,8 @@ const Documentation = () => {
         setSearchParams({ id: main.id }, { replace: true });
       } else if (!main && subs.length > 0 && String(subs[0].id) !== articleId) {
         setSearchParams({ id: subs[0].id }, { replace: true });
+      } else if (!main && subs.length === 0 && articles.length > 0 && String(articles[0].id) !== articleId) {
+        setSearchParams({ id: articles[0].id }, { replace: true });
       }
     }
   }, [loading, articleId, articles, prologueArticles, setSearchParams]);
@@ -264,7 +275,7 @@ const Documentation = () => {
     if (node.type === 'heading') {
       const fullString = getFullText(node);
       const level = node.level || 2;
-      const fontSize = level === 1 ? '28px' : level === 2 ? '22px' : '18px';
+      const fontSize = level === 1 ? { xs: '24px', md: '28px' } : level === 2 ? { xs: '20px', md: '22px' } : { xs: '16px', md: '18px' };
 
       return (
         <Typography
@@ -290,7 +301,7 @@ const Documentation = () => {
         if (matches.length === 1) {
           let htmlText = '';
           if (textOnly) htmlText += `<span style="display: block; margin-bottom: 10px; font-family: 'Inter', sans-serif; max-width: 850px;">${highlightedTextOnly}</span>`;
-          htmlText += fullString.replace(imageRegex, `<img src="$2" alt="$1" style="max-width: 100%; border-radius: 8px; margin: 25px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: block; border: 1px solid ${theme.border}" />`);
+          htmlText += fullString.replace(imageRegex, `<img src="$2" alt="$1" style="max-width: 100%; height: auto; border-radius: 8px; margin: 25px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: block; border: 1px solid ${theme.border}" />`);
           const marginB = node.type === 'list-item' ? '8px' : '20px';
           if (node.type === 'list-item') return <Box component="li" key={index} sx={{ mb: marginB, lineHeight: '1.8', fontFamily: "'Inter', sans-serif" }} dangerouslySetInnerHTML={{ __html: htmlText }} />;
           return <Box key={index} sx={{ mb: marginB, lineHeight: '1.8', color: theme.textBody, fontFamily: "'Inter', sans-serif" }} dangerouslySetInnerHTML={{ __html: htmlText }} />;
@@ -300,7 +311,7 @@ const Documentation = () => {
         if (textOnly) imagesHtml += `<p style="margin-bottom: 15px; color: ${theme.textBody}; font-family: 'Inter', sans-serif; max-width: 850px;">${highlightedTextOnly}</p>`;
         imagesHtml += '<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin: 25px 0;">';
         matches.forEach(match => {
-          imagesHtml += `<img src="${match[2]}" alt="${match[1]}" style="max-width: 47%; flex: 1 1 300px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); object-fit: contain; border: 1px solid ${theme.border}" />`;
+          imagesHtml += `<img src="${match[2]}" alt="${match[1]}" style="max-width: 47%; height: auto; flex: 1 1 250px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); object-fit: contain; border: 1px solid ${theme.border}" />`;
         });
         imagesHtml += '</div>';
 
@@ -471,7 +482,7 @@ const Documentation = () => {
                 backgroundColor: bgColor,
                 border: `1.5px solid ${borderColor}`,
                 borderRadius: '6px',
-                p: 3.5,
+                p: { xs: 2, sm: 2.5, md: 3.5 },
                 mb: 4,
                 maxWidth: '850px',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',

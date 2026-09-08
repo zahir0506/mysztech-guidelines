@@ -121,7 +121,7 @@ const PageLayout = ({
               cursor: 'pointer', 
               transition: 'opacity 0.2s',
               '&:hover': { opacity: 0.8 },
-              width: { xs: 'auto', md: '248px' }, 
+              width: { xs: '150px', sm: '180px', md: '248px' }, 
               objectFit: 'contain',
               objectPosition: 'left'
             }}
@@ -195,8 +195,8 @@ const PageLayout = ({
           </Box>
         </Box>
 
-        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start' }}>
-          <Box component="main" sx={{ p: { xs: 3, sm: 5, md: 6, lg: 8 }, flexGrow: 1, width: '100%' }}>
+        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', minWidth: 0 }}>
+          <Box component="main" sx={{ p: { xs: 2, sm: 4, md: 6, lg: 8 }, flexGrow: 1, width: '100%', minWidth: 0 }}>
             <Box onClick={() => setMobileSearchOpen(true)} sx={{ display: { xs: 'flex', md: 'none' }, mb: 4, alignItems: 'center', bgcolor: theme.searchBg, borderRadius: '8px', px: 2, py: 1, cursor: 'pointer' }}>
               <SearchIcon sx={{ color: theme.textMuted, fontSize: 20, mr: 1 }} />
               <Typography sx={{ color: theme.textMuted, flexGrow: 1, fontFamily: "'Inter', sans-serif", fontSize: '14px' }}>
