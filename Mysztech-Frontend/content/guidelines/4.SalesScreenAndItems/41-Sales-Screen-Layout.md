@@ -7,7 +7,11 @@ parentTopic: 4. Sales Screen and Items
 language: en
 ---
 
-The Sales Screen shows the categories and items that staff use to take customer orders. If the categories and items are already AVAILABLE, you can directly proceed to 4.1 Sales Screen Layout. If the categories and items are NOT AVAILABLE, the Sales Screen may appear blank. In this case, you can directly proceed to 4.2 Items Creation.
+The **Sales Screen** shows the categories and items that staff use to take customer orders.
+
+**If the categories and items are already AVAILABLE**, you can directly proceed to **4.1 Sales Screen Layout**. 
+
+**If the categories and items are NOT AVAILABLE**, the Sales Screen may appear blank. In this case, you can directly proceed to **4.2 Items Creation**.
 
 1\.	This is the Sales Screen Layout. It shows all categories (clipped buttons without pictures) and the items inside each category (flat buttons with pictures). Tap a category or item to see more.
 

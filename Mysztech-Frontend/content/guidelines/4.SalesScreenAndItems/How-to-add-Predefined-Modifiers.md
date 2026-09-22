@@ -9,7 +9,7 @@ language: en
 
 A **Predefined Modifier** is a ready made customization option (like “Low Sugar,” “More Ice,” “Less Ice”) that was created earlier in the Backoffice. Its purpose in the POS system is to save time and ensure consistency, because staff can quickly reuse the same modifier across multiple items.
 
-*Click Here to know how to access Management Hub*
+*[Click Here to know how to access Management Hub](http://localhost:5173/docs?id=How-to-access-Management-Hub)*
 
 1\.	Scroll down in the sidebar, find Modifiers under the Item section, click it, and go into the Modifiers page.
 
@@ -45,7 +45,7 @@ Click the “Select all outlets” button to automatically select every outlet a
 
 ![](</admin/4. Sales Screen and Items/How to add Predefined Modifiers/Picture6-Modifiers.png>)
 
-7\.	Reconfirm everything you entered — the modifier name, price, cost, and selected outlets. 
+7\.	Reconfirm everything you entered — the modifier name, price, cost, and selected outlets.
 
 Once all details are correct, press the Create button to save the modifier.
 
