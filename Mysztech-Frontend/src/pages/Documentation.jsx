@@ -9,6 +9,25 @@ import PageLayout from '../components/PageLayout';
 
 import { Typography, CircularProgress, Box, Link as MuiLink } from '@mui/material';
 
+// Fungsi bantuan untuk mengekstrak teks sebenar dari struktur AST (TinaCMS Rich Text)
+const extractTextFromAst = (node) => {
+  if (!node) return '';
+  if (typeof node === 'string') return node;
+  if (node.text) return node.text;
+  
+  let text = '';
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      text += extractTextFromAst(child) + ' ';
+    }
+  } else if (node.children) {
+    text += extractTextFromAst(node.children);
+  } else if (node.props && node.props.children) {
+    text += extractTextFromAst(node.props.children);
+  }
+  return text;
+};
+
 const Documentation = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,20 +112,55 @@ const Documentation = () => {
     }
   }, [loading, articleId, articles, setSearchParams]);
 
-  // Carian ringkas
+  // Carian mendalam (Tajuk & Isi Kandungan)
   const searchResults = useMemo(() => {
     if (searchTerm.trim().length < 2) return [];
     const lowerQuery = searchTerm.toLowerCase();
-    return articles
-      .filter(item => item.title && item.title.toLowerCase().includes(lowerQuery))
-      .map(item => ({
-        id: item._sys.filename,
-        type: 'article',
-        articleId: item._sys.filename,
-        title: item.title,
-        snippet: 'Panduan MYSZTECH'
-      }));
-  }, [searchTerm, articles]);
+    
+    const results = [];
+    
+    articles.forEach(item => {
+      let isMatch = false;
+      let snippet = language === 'ms' ? 'Panduan MYSZTECH' : 'MYSZTECH Guidelines';
+      let matchType = 'article';
+
+      // 1. Semak dalam tajuk
+      if (item.title && item.title.toLowerCase().includes(lowerQuery)) {
+        isMatch = true;
+      }
+
+      // 2. Semak dalam isi kandungan
+      if (item.body) {
+        const fullText = extractTextFromAst(item.body);
+        const lowerFullText = fullText.toLowerCase();
+        
+        if (lowerFullText.includes(lowerQuery)) {
+          isMatch = true;
+          matchType = 'content';
+          
+          const matchIndex = lowerFullText.indexOf(lowerQuery);
+          const start = Math.max(0, matchIndex - 30);
+          const end = Math.min(fullText.length, matchIndex + 40 + lowerQuery.length);
+          
+          snippet = fullText.substring(start, end).replace(/\s+/g, ' ').trim();
+          if (start > 0) snippet = '...' + snippet;
+          if (end < fullText.length) snippet = snippet + '...';
+        }
+      }
+
+      if (isMatch) {
+        results.push({
+          id: item._sys.filename,
+          type: matchType,
+          articleId: item._sys.filename,
+          title: item.title,
+          snippet: snippet
+        });
+      }
+    });
+
+    return results;
+  }, [searchTerm, articles, language]);
 
   const highlightMatch = (text) => {
     if (!searchTerm || !text) return text;
@@ -150,7 +204,10 @@ const Documentation = () => {
     <PageLayout
       theme={theme} isDarkMode={isDarkMode} toggleTheme={toggleTheme} language={language} toggleLanguage={toggleLanguage}
       searchTerm={searchTerm} setSearchTerm={setSearchTerm}
-      searchFocused={searchFocused} setSearchFocused={searchFocused}
+      
+      // INI ADALAH BAHAGIAN YANG TELAH DIBETULKAN
+      searchFocused={searchFocused} setSearchFocused={setSearchFocused}
+      
       searchResults={searchResults} onSearchResultClick={handleSearchResultClick} highlightMatch={highlightMatch}
       setSearchParams={setSearchParams} sidebarProps={sidebarProps}
     >
@@ -169,10 +226,9 @@ const Documentation = () => {
               <Box 
                 className="tina-content"
                 sx={{
-                  // Gaya automatik untuk semua gambar yang keluar dari TinaCMS
                   '& img': {
-                    maxWidth: '100%',    // Pastikan gambar tak lebih lebar dari skrin
-                    height: 'auto',      // Kekalkan nisbah (ratio) gambar
+                    maxWidth: '100%',
+                    height: 'auto',
                     borderRadius: '8px',
                     my: 3,               
                     display: 'block',
@@ -183,9 +239,6 @@ const Documentation = () => {
                 <TinaMarkdown 
                   content={selectedArticle.body} 
                   components={{
-                    // ====================================================
-                    // PEMBACA KOTAK INFO (BIRU/OREN)
-                    // ====================================================
                     KotakInfo: (props) => {
                       const isOrange = props.jenis === 'oren';
                       const bgColor = isOrange ? '#fd7e14' : '#0c6b8a';
@@ -213,7 +266,6 @@ const Documentation = () => {
                         </Box>
                       );
                     }
-                    // ====================================================
                   }}
                 />
               </Box>

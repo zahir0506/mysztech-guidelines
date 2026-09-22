@@ -90,9 +90,10 @@ export default defineConfig({
                     required: true,
                   },
                   {
-                    name: "kandungan",
+                    name: "children",
                     label: "Isi Kotak",
-                    type: "rich-text"
+                    type: "rich-text",
+                    isBody: true
                   }
                 ],
               }

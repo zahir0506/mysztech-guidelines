@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { 
-  Box, CssBaseline, Typography, IconButton, Drawer, Button, 
-  InputBase, ClickAwayListener, Paper, List, ListItem, ListItemText, Dialog 
+import {
+  Box, CssBaseline, Typography, IconButton, Drawer, Button,
+  InputBase, ClickAwayListener, Paper, List, ListItem, ListItemText, Dialog
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -21,7 +21,7 @@ const PageLayout = ({
 }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  
+
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
   const renderSearchList = () => (
@@ -31,51 +31,51 @@ const PageLayout = ({
           {language === 'ms' ? 'Taip untuk mula mencari...' : 'Type to start searching...'}
         </Typography>
       )}
-      
+
       {searchTerm.length > 0 && searchTerm.length < 2 && (
         <Typography sx={{ p: 3, textAlign: 'center', color: theme.textMuted, fontFamily: "'Inter', sans-serif", fontSize: '13.5px' }}>
           {language === 'ms' ? 'Taip sekurang-kurangnya 2 huruf...' : 'Type at least 2 characters...'}
         </Typography>
       )}
-      
+
       {searchTerm.length >= 2 && searchResults.length === 0 && (
         <Typography sx={{ p: 4, textAlign: 'center', color: theme.textMuted, fontFamily: "'Inter', sans-serif", fontSize: '13.5px' }}>
           Tiada hasil untuk <strong style={{ color: theme.textMain }}>"{searchTerm}"</strong>
         </Typography>
       )}
-      
+
       <List sx={{ pt: 0 }}>
         {searchResults.map((result) => (
-          <ListItem 
-            button 
-            key={result.id} 
+          <ListItem
+            button
+            key={result.id}
             onClick={() => {
               onSearchResultClick(result);
               setSearchFocused(false);
               setMobileSearchOpen(false);
             }}
-            sx={{ 
-              borderRadius: '6px', mb: 0.5, p: 1.2, 
-              display: 'flex', alignItems: 'center', 
+            sx={{
+              borderRadius: '6px', mb: 0.5, p: 1.2,
+              display: 'flex', alignItems: 'center',
               bgcolor: 'transparent',
-              transition: 'background 0.1s ease', 
-              '&:hover': { 
+              transition: 'background 0.1s ease',
+              '&:hover': {
                 bgcolor: isDarkMode ? '#27272a' : '#f3f4f6',
               }
             }}
           >
-            <Box sx={{ 
-              display: 'flex', alignItems: 'center', justifyContent: 'center', 
-              width: 32, height: 32, borderRadius: '6px', 
-              bgcolor: isDarkMode ? '#18181b' : '#e5e7eb', 
-              color: theme.textMuted, mr: 2 
+            <Box sx={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 32, height: 32, borderRadius: '6px',
+              bgcolor: isDarkMode ? '#18181b' : '#e5e7eb',
+              color: theme.textMuted, mr: 2
             }}>
               {result.type === 'article' && <ArticleOutlinedIcon sx={{ fontSize: 18 }} />}
               {result.type === 'heading' && <TagOutlinedIcon sx={{ fontSize: 18 }} />}
               {result.type === 'content' && <SubjectOutlinedIcon sx={{ fontSize: 18 }} />}
             </Box>
 
-            <ListItemText 
+            <ListItemText
               primary={
                 <Typography sx={{ color: theme.textMain, fontWeight: result.type !== 'content' ? 600 : 400, fontSize: '14px', fontFamily: "'Inter', sans-serif", mb: 0.2 }}>
                   {highlightMatch(result.title)}
@@ -98,10 +98,10 @@ const PageLayout = ({
       <CssBaseline />
 
       {/* TOP NAVIGATION BAR */}
-      <Box 
-        component="header" 
-        sx={{ 
-          position: 'sticky', top: 0, zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+      <Box
+        component="header"
+        sx={{
+          position: 'sticky', top: 0, zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           height: '64px', px: { xs: 2, md: 4 }, bgcolor: theme.headerBg, borderBottom: `1px solid ${theme.border}`
         }}
       >
@@ -110,33 +110,32 @@ const PageLayout = ({
             <MenuIcon />
           </IconButton>
 
-          {/* LOGO GAMBAR GANTI TEKS MYSZTECH POS */}
-          <Box 
+          <Box
             component="img"
-            src="/company_banner.png" 
+            src="/company_banner.png"
             alt="MYSZTECH Logo"
             onClick={() => setSearchParams({ id: 'prologue' })}
-            sx={{ 
-              height: '34px', 
-              cursor: 'pointer', 
+            sx={{
+              height: '34px',
+              cursor: 'pointer',
               transition: 'opacity 0.2s',
               '&:hover': { opacity: 0.8 },
-              width: { xs: '150px', sm: '180px', md: '248px' }, 
+              width: { xs: '150px', sm: '180px', md: '248px' },
               objectFit: 'contain',
               objectPosition: 'left'
             }}
           />
         </Box>
 
-        {/* SEARCH BAR MINIMALIS & ORGANIK */}
+        {/* SEARCH BAR (DESKTOP) */}
         <ClickAwayListener onClickAway={() => setSearchFocused(false)}>
           <Box sx={{ position: 'relative', display: { xs: 'none', md: 'block' }, width: { md: '420px', lg: '500px' }, zIndex: 1300 }}>
-            <Box 
-              sx={{ 
-                display: 'flex', alignItems: 'center', 
-                bgcolor: theme.searchBg, 
-                borderRadius: '8px', 
-                px: 2, py: 0.8, 
+            <Box
+              sx={{
+                display: 'flex', alignItems: 'center',
+                bgcolor: theme.searchBg,
+                borderRadius: '8px',
+                px: 2, py: 0.8,
                 border: `1px solid ${searchFocused ? (isDarkMode ? '#52525b' : '#9ca3af') : 'transparent'}`,
                 transition: 'border-color 0.15s ease',
               }}
@@ -151,17 +150,17 @@ const PageLayout = ({
               />
             </Box>
 
-            {/* DROPDOWN RINGKAS */}
+            {/* DROPDOWN (DESKTOP) */}
             {searchFocused && (
               <Paper
                 elevation={0}
                 sx={{
                   position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
                   bgcolor: isDarkMode ? '#18181b' : '#ffffff',
-                  border: `1px solid ${theme.border}`, 
+                  border: `1px solid ${theme.border}`,
                   borderRadius: '8px',
                   boxShadow: isDarkMode ? '0 10px 25px rgba(0,0,0,0.5)' : '0 10px 25px rgba(0,0,0,0.08)',
-                  maxH: '50vh', overflowY: 'auto', 
+                  maxH: '50vh', overflowY: 'auto',
                   zIndex: 1200
                 }}
               >
@@ -197,6 +196,7 @@ const PageLayout = ({
 
         <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', minWidth: 0 }}>
           <Box component="main" sx={{ p: { xs: 2, sm: 4, md: 6, lg: 8 }, flexGrow: 1, width: '100%', minWidth: 0 }}>
+            {/* SEARCH BUTANG (MOBILE) */}
             <Box onClick={() => setMobileSearchOpen(true)} sx={{ display: { xs: 'flex', md: 'none' }, mb: 4, alignItems: 'center', bgcolor: theme.searchBg, borderRadius: '8px', px: 2, py: 1, cursor: 'pointer' }}>
               <SearchIcon sx={{ color: theme.textMuted, fontSize: 20, mr: 1 }} />
               <Typography sx={{ color: theme.textMuted, flexGrow: 1, fontFamily: "'Inter', sans-serif", fontSize: '14px' }}>
@@ -214,15 +214,23 @@ const PageLayout = ({
         </Box>
       </Box>
 
+      {/* KEMAS KINI: DIALOG SEARCH BAR (MOBILE) DIPERBAIKI */}
       <Dialog fullScreen open={mobileSearchOpen} onClose={() => setMobileSearchOpen(false)} PaperProps={{ sx: { bgcolor: theme.bg, backgroundImage: 'none' } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1.5, borderBottom: `1px solid ${theme.border}`, bgcolor: theme.headerBg }}>
-          <IconButton onClick={() => setMobileSearchOpen(false)} sx={{ color: theme.textMain, mr: 1 }}><ArrowBackIcon /></IconButton>
-          <InputBase autoFocus fullWidth placeholder={language === 'ms' ? "Cari..." : "Search..."} value={searchTerm || ''} onChange={(e) => setSearchTerm(e.target.value)} sx={{ color: theme.textMain, fontSize: '16px', fontFamily: "'Inter', sans-serif" }} />
-        </Box>
-        <Box sx={{ overflowY: 'auto' }}>
-          {renderSearchList()}
+        {/* BALUTAN BARU: Wajibkan latar belakang ikut tema */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: theme.bg }}>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1.5, borderBottom: `1px solid ${theme.border}`, bgcolor: theme.headerBg }}>
+            <IconButton onClick={() => setMobileSearchOpen(false)} sx={{ color: theme.textMain, mr: 1 }}><ArrowBackIcon /></IconButton>
+            <InputBase autoFocus fullWidth placeholder={language === 'ms' ? "Cari..." : "Search..."} value={searchTerm || ''} onChange={(e) => setSearchTerm(e.target.value)} sx={{ color: theme.textMain, fontSize: '16px', fontFamily: "'Inter', sans-serif" }} />
+          </Box>
+
+          <Box sx={{ overflowY: 'auto', flexGrow: 1 }}>
+            {renderSearchList()}
+          </Box>
+
         </Box>
       </Dialog>
+
     </Box>
   );
 };
