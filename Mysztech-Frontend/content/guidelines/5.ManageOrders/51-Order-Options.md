@@ -9,7 +9,7 @@ language: en
 
 Before selecting an **Order Option** on the POS system, you must first create the available order options in the **Management Hub.**
 
-**Don't know how to access Management Hub?** *Click here to learn how to access Management Hub.*
+**Don't know how to access Management Hub?** *[Click here to learn how to access Management Hub.](http://localhost:5173/docs?id=How-to-access-Management-Hub)*
 
 **Create Order Options in Management Hub**
 

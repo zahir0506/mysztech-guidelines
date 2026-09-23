@@ -39,6 +39,10 @@ export default defineConfig({
             name: "section",
             label: "Kumpulan Utama (Cth: USER GUIDELINES, SUPPORT)",
             options: [
+              // ==========================================
+              // KEMAS KINI: TAMBAH PILIHAN PROLOGUE
+              // ==========================================
+              { label: "PROLOGUE", value: "PROLOGUE" },
               { label: "USER GUIDELINES", value: "USER GUIDELINES" },
               { label: "SUPPORT", value: "SUPPORT" }
             ],
@@ -90,15 +94,13 @@ export default defineConfig({
                     required: true,
                   },
                   {
-                    name: "children",
+                    name: "kandungan",
                     label: "Isi Kotak",
-                    type: "rich-text",
-                    isBody: true
+                    type: "rich-text"
                   }
                 ],
               }
             ],
-           
           },
         ],
       },

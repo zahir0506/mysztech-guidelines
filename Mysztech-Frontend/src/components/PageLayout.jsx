@@ -171,9 +171,6 @@ const PageLayout = ({
         </ClickAwayListener>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button onClick={toggleLanguage} sx={{ color: theme.textMain, minWidth: 'auto', fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: '14px' }}>
-            {language === 'ms' ? 'MS' : 'EN'}
-          </Button>
           <IconButton onClick={toggleTheme} sx={{ color: theme.textMain }}>
             {isDarkMode ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
           </IconButton>

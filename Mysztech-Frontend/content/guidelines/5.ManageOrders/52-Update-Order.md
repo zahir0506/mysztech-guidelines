@@ -39,7 +39,7 @@ Customers can be managed from both the **POS device** and the **Management Hub.*
 
 The Management Hub provides additional options for managing customer records, including **creating, viewing, editing, exporting, and deleting customers.**
 
-**Don't know how to access Management Hub?** *Click here to learn how to access Management Hub.*
+**Don't know how to access Management Hub?** *[Click here to learn how to access Management Hub.](http://localhost:5173/docs?id=How-to-access-Management-Hub)*
 
 1\.	Go to the **Customer** section in the Management Hub. You will see the list of customers created in the system.
 

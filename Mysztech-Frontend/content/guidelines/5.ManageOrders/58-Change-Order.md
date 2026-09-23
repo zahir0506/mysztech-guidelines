@@ -139,7 +139,7 @@ You can apply a discount by **Value** or **Percentage.**
 
 Discount settings must be created and configured in the Backoffice. Once the discount has been set up in the Backoffice, it will automatically be displayed in the POS system when applicable. Discount creation and configuration cannot be done directly from the POS system.
 
-Don't know how to access Management Hub? \[.]
+Don't know how to access Management Hub? *[Click here to learn how to access Management Hub.](http://localhost:5173/docs?id=How-to-access-Management-Hub)*
 
 1\.	Scroll down to the **Discount** section.
 

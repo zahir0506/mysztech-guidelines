@@ -38,6 +38,10 @@ const Sidebar = ({ language, onMobileClose }) => {
     setExpandedTopic(prev => prev === filename ? null : filename);
   };
 
+  // ==========================================
+  // KEMAS KINI: TAPIS DATA PROLOGUE
+  // ==========================================
+  const prologueDocs = panduan.filter(item => item.section === "PROLOGUE");
   const userGuidelines = panduan.filter(item => item.section === "USER GUIDELINES");
   const support = panduan.filter(item => item.section === "SUPPORT");
 
@@ -49,18 +53,37 @@ const Sidebar = ({ language, onMobileClose }) => {
       <Box sx={{ flexGrow: 1 }}>
         
         {/* ======================================= */}
-        {/* PROLOGUE / INTRO */}
+        {/* PROLOGUE / INTRO (DINAMIK) */}
         {/* ======================================= */}
-        <Box sx={{ mb: 2 }}>
-          <Link 
-            to="/docs?id=prologue" 
-            onClick={handleLinkClick}
-            style={{ textDecoration: 'none' }}
-          >
-            <Typography className={`sidebar-heading sidebar-clickable ${activeId === 'prologue' || !activeId ? 'active-main' : ''}`}>
-              {language === 'ms' ? 'Prolog' : 'Prologue'}
+        <Typography className="sidebar-heading" sx={{ mb: 1.5 }}>
+          {language === 'ms' ? 'PROLOG' : 'PROLOGUE'}
+        </Typography>
+        
+        <Box className="sidebar-list" sx={{ mb: 3 }}>
+          {prologueDocs.length === 0 && (
+            <Typography className="sidebar-empty">
+              {language === 'ms' ? 'Tiada fail prolog.' : 'No prologue files.'}
             </Typography>
-          </Link>
+          )}
+
+          {prologueDocs.map((item) => {
+            const filename = item._sys.filename;
+            const pathPautan = `/docs?id=${filename}`;
+            const isActive = activeId === filename;
+            
+            return (
+              <Link 
+                key={filename} 
+                to={pathPautan} 
+                onClick={handleLinkClick} 
+                style={{ textDecoration: 'none', display: 'block', paddingBottom: '8px' }}
+              >
+                <Typography className={`sidebar-item ${isActive ? 'active-item' : ''}`} sx={{ fontWeight: isActive ? 600 : 400 }}>
+                  {item.title}
+                </Typography>
+              </Link>
+            );
+          })}
         </Box>
 
         {/* ======================================= */}
@@ -162,7 +185,7 @@ const Sidebar = ({ language, onMobileClose }) => {
         {/* ======================================= */}
         {/* SUPPORT / TROUBLESHOOTING */}
         {/* ======================================= */}
-        <Typography className="sidebar-heading sidebar-mt">
+        {/* <Typography className="sidebar-heading sidebar-mt">
           {language === 'ms' ? 'Sokongan' : 'Support'}
         </Typography>
 
@@ -186,7 +209,7 @@ const Sidebar = ({ language, onMobileClose }) => {
               </Typography>
             </Link>
           )}
-        </Box>
+        </Box> */}
 
       </Box>
     </Box>

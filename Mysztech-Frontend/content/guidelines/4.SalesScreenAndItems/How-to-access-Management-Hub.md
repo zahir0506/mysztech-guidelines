@@ -1,9 +1,9 @@
 ---
 title: How to access Management Hub
 section: USER GUIDELINES
-order: 4.8
-isSubTopic: true
-parentTopic: 4. Sales Screen and Items
+order: 1
+isSubTopic: false
+parentTopic: ''
 language: en
 ---
 

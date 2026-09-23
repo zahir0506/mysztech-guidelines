@@ -99,7 +99,7 @@ For example:
 
 **Open Order** must be added and configured in the **Management Hub** before it can be used on the POS device.
 
-Don't know how to access Management Hub? Click here to learn how to access Management Hub.
+Don't know how to access Management Hub? *[Click here to learn how to access Management Hub.](http://localhost:5173/docs?id=How-to-access-Management-Hub)*
 
 Open Order Setup – **Management Hub**
 
