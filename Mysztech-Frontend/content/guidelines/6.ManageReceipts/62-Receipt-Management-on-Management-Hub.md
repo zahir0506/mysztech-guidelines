@@ -56,12 +56,36 @@ Note:  Press the **Filter** icon to filter receipts based on your preferred crit
 
 ![](</admin/6. Manage Receipts/6.4/Picture9-6.2.png>)
 
-10\. You can also **cancel a receipt** when required.
+10\.	Enter the customer's **email address** and select **Send Receipt** to send the receipt to the customer's email.
 
-Note: Cancelling a **receipt** will not delete it from the system. The receipt will remain in the **Receipt List** with the **Type** labelled as “**Cancel**”.
+![](</admin/6. Manage Receipts/6.2/Screenshot-2026-09-23-153048.png>)
 
-![](</admin/6. Manage Receipts/6.4/Picture10-6.2.png>)
+11\.	Or, select **Send Invoice** to send the invoice to the customer's email.
 
-11\. Optionally, you can search for an **Invoice No**. using the search bar.
+![](</admin/6. Manage Receipts/6.2/Screenshot-2026-09-23-153135.png>)
 
-![](</admin/6. Manage Receipts/6.4/Picture11-6.2.png>)
+12\.	Press **Preview Receipt** to view the receipt before sending.
+
+![](</admin/6. Manage Receipts/6.2/Screenshot-2026-09-23-153324.png>)
+
+13\.	You can now view the receipt details.
+
+![](</admin/6. Manage Receipts/6.2/Screenshot-2026-09-23-153407.png>)
+
+14\.	Press **Preview Invoice** to view the invoice.
+
+![](</admin/6. Manage Receipts/6.2/Screenshot-2026-09-23-153455.png>)
+
+15\.	You can now view the invoice details.
+
+![](</admin/6. Manage Receipts/6.2/Screenshot-2026-09-23-153534.png>)
+
+16\.	You can also **cancel a receipt** when required. 
+
+**Note:** Cancelling a receipt will not delete it from the system. The receipt will remain in the **Receipt List** with the **Type** labelled as **“Cancel”**.
+
+![](</admin/6. Manage Receipts/6.2/Screenshot-2026-09-23-153649.png>)
+
+17\.	Optionally, you can search for an **Invoice No.** using the search bar.
+
+![](</admin/6. Manage Receipts/6.2/Screenshot-2026-09-23-153729.png>)
