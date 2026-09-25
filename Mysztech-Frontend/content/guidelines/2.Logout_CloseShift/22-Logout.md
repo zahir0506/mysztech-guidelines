@@ -1,7 +1,7 @@
 ---
-title: 2.2 Logout
+title: 2.3 Logout
 section: USER GUIDELINES
-order: 2.2
+order: 2.3
 isSubTopic: true
 parentTopic: 2. Logout & Close Shift
 language: en
